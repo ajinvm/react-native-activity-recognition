@@ -17,7 +17,7 @@ const ActivityRecognition = {
         },
       })
     })
-    return () => DeviceEventEmitter.removeSubscription(subscription)
+    return () => subscription.remove()
   },
 
   start(detectionIntervalMs) {
