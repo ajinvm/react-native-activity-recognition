@@ -8,6 +8,7 @@ const ActivityRecognition = {
 
   subscribe(callback) {
     const subscription = DeviceEventEmitter.addListener('DetectedActivity', detectedActivities => {
+      console.log(detectedActivities)
       callback({
         ...detectedActivities,
         get sorted() {
