@@ -3,6 +3,7 @@ package com.xebia.activityrecognition;
 import android.app.IntentService;
 import android.content.Intent;
 import android.util.Log;
+import android.os.Build;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -12,10 +13,10 @@ import com.google.android.gms.location.DetectedActivity;
 import java.util.ArrayList;
 
 public class DetectionService extends IntentService {
-    protected static final String TAG = DetectionService.class.getSimpleName();
-    protected static final String PACKAGE_NAME = DetectionService.class.getPackage().getName();
-    protected static final String ACTIVITY_EXTRA = PACKAGE_NAME + ".ACTIVITY_EXTRA";
-    protected static final String BROADCAST_ACTION = PACKAGE_NAME + ".BROADCAST_ACTION";
+
+    private static final String TAG = DetectionService.class.getSimpleName();
+    public static final String BROADCAST_ACTION = "com.xebia.activityrecognition.BROADCAST_ACTION";
+    public static final String ACTIVITY_EXTRA = "com.xebia.activityrecognition.ACTIVITY_EXTRA";
 
     public DetectionService() {
         super(TAG);
@@ -23,21 +24,30 @@ public class DetectionService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        ActivityRecognitionResult result = ActivityRecognitionResult.extractResult(intent);
-        ArrayList<DetectedActivity> detectedActivities = (ArrayList) result.getProbableActivities();
+        if (ActivityRecognitionResult.hasResult(intent)) {
+            ActivityRecognitionResult result = ActivityRecognitionResult.extractResult(intent);
+            ArrayList<DetectedActivity> detectedActivities = (ArrayList<DetectedActivity>) result.getProbableActivities();
 
-        Log.d(TAG, "Detected activities:");
-        for (DetectedActivity da: detectedActivities) {
-            Log.d(TAG, getActivityString(da.getType()) + " (" + da.getConfidence() + "%)");
+            Intent localIntent = new Intent(BROADCAST_ACTION);
+            localIntent.putParcelableArrayListExtra(ACTIVITY_EXTRA, detectedActivities);
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // For Android 13 (API level 33) and above, use explicit broadcasts
+                localIntent.setPackage(getPackageName());
+                sendBroadcast(localIntent);
+            } else {
+                // For older versions, continue using LocalBroadcastManager
+                LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
+            }
+
+            Log.d(TAG, "Broadcasting detected activities: " + detectedActivities);
+        } else {
+            Log.e(TAG, "No ActivityRecognitionResult in intent");
         }
-
-        Intent localIntent = new Intent(BROADCAST_ACTION);
-        localIntent.putExtra(ACTIVITY_EXTRA, detectedActivities);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
     }
 
     public static String getActivityString(int detectedActivityType) {
-        switch(detectedActivityType) {
+        switch (detectedActivityType) {
             case DetectedActivity.IN_VEHICLE:
                 return "IN_VEHICLE";
             case DetectedActivity.ON_BICYCLE:
