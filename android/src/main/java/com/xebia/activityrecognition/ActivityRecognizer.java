@@ -41,12 +41,25 @@ public class ActivityRecognizer {
         started = false;
 
         mBroadcastReceiver = new ActivityDetectionBroadcastReceiver();
-        IntentFilter intentFilter = new IntentFilter(DetectionService.BROADCAST_ACTION);
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            mContext.registerReceiver(mBroadcastReceiver, intentFilter, Context.RECEIVER_EXPORTED);
-        } else {
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(DetectionService.BROADCAST_ACTION);
+        intentFilter.addAction(DetectionService.ACTIVITY_EXTRA);
+        // if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            // mContext.registerReceiver(mBroadcastReceiver, intentFilter, Context.RECEIVER_EXPORTED);
+        // } else {
+        // LocalBroadcastManager.getInstance(mContext).registerReceiver(mBroadcastReceiver, intentFilter);
+        // Log.d("AJIN", "Registered broadcast receiver");
+        
+        // }
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // For Android 14 (API 34) and above (corrected)
+            mContext.registerReceiver(mBroadcastReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED);
+        }else {
+            // For Android 12 (API 32) and below
             LocalBroadcastManager.getInstance(mContext).registerReceiver(mBroadcastReceiver, intentFilter);
         }
+        Log.d("AJIN", "Registered broadcast receiver for Android " + android.os.Build.VERSION.SDK_INT);
     }
 
     // Subscribe to activity updates.
@@ -57,10 +70,10 @@ public class ActivityRecognizer {
                     detectionIntervalMillis,
                     getActivityDetectionPendingIntent()
             ).addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "Successfully requested activity updates");
+                Log.d("AJIN", "Successfully requested activity updates");
                 started = true;
             }).addOnFailureListener(e -> {
-                Log.e(TAG, "Failed to request activity updates", e);
+                Log.e("AJIN", "Failed to request activity updates", e);
             });
         }
     }
@@ -95,17 +108,17 @@ public class ActivityRecognizer {
             mActivityRecognitionClient.removeActivityUpdates(
                     getActivityDetectionPendingIntent()
             ).addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "Successfully removed activity updates");
+                Log.d("AJIN", "Successfully removed activity updates");
                 started = false;
             }).addOnFailureListener(e -> {
-                Log.e(TAG, "Failed to remove activity updates", e);
+                Log.e("AJIN", "Failed to remove activity updates", e);
             });
 
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                mContext.unregisterReceiver(mBroadcastReceiver);
-            } else {
+            // if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            //     mContext.unregisterReceiver(mBroadcastReceiver);
+            // } else {
                 LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mBroadcastReceiver);
-            }
+            // }
         }
     }
 
@@ -114,7 +127,7 @@ public class ActivityRecognizer {
         Intent intent = new Intent(mReactContext, DetectionService.class);
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            flags |= PendingIntent.FLAG_IMMUTABLE;
+            flags |= PendingIntent.FLAG_MUTABLE;
         }
         return PendingIntent.getService(mReactContext, 0, intent, flags);
     }
@@ -125,6 +138,7 @@ public class ActivityRecognizer {
         for (DetectedActivity activity : detectedActivities) {
             params.putInt(DetectionService.getActivityString(activity.getType()), activity.getConfidence());
         }
+        Log.d("AJIN", "Sending activity update: to react " + params.toString());
         sendEvent("DetectedActivity", params);
     }
 
@@ -133,7 +147,7 @@ public class ActivityRecognizer {
         try {
             mReactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(eventName, params);
         } catch (RuntimeException e) {
-            Log.e(TAG, "java.lang.RuntimeException: Trying to invoke JS before CatalystInstance has been set!", e);
+            Log.e("AJIN", "java.lang.RuntimeException: Trying to invoke JS before CatalystInstance has been set!", e);
         }
     }
 
@@ -143,7 +157,7 @@ public class ActivityRecognizer {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "Received activity update");
+            Log.d("AJIN", "Received activity update");
             ArrayList<DetectedActivity> updatedActivities = intent.getParcelableArrayListExtra(DetectionService.ACTIVITY_EXTRA);
             onUpdate(updatedActivities);
         }
