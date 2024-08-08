@@ -1,5 +1,6 @@
 package com.xebia.activityrecognition;
 
+import android.os.Bundle;
 import android.app.IntentService;
 import android.content.Intent;
 import android.util.Log;
@@ -9,7 +10,6 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.android.gms.location.ActivityRecognitionResult;
 import com.google.android.gms.location.DetectedActivity;
-
 import java.util.ArrayList;
 
 public class DetectionService extends IntentService {
@@ -24,7 +24,19 @@ public class DetectionService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+        if (intent != null) {
+            Log.d("AJIN", "Received intent: " + intent.toString());
+
+            Bundle extras = intent.getExtras();
+            if (extras != null) {
+                for (String key : extras.keySet()) {
+                    Object value = extras.get(key);
+                    Log.d("AJIN", "Intent extra - Key: " + key + ", Value: " + value);
+                }
+            }
+        }
         if (ActivityRecognitionResult.hasResult(intent)) {
+
             ActivityRecognitionResult result = ActivityRecognitionResult.extractResult(intent);
             ArrayList<DetectedActivity> detectedActivities = (ArrayList<DetectedActivity>) result.getProbableActivities();
 
@@ -40,9 +52,9 @@ public class DetectionService extends IntentService {
                 LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
             }
 
-            Log.d(TAG, "Broadcasting detected activities: " + detectedActivities);
+            Log.d("AJIN", "Broadcasting detected activities: " + detectedActivities);
         } else {
-            Log.e(TAG, "No ActivityRecognitionResult in intent");
+            Log.e("AJIN", "No ActivityRecognitionResult in intent");
         }
     }
 
