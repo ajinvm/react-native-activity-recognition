@@ -43,7 +43,7 @@ public class DetectionService extends IntentService {
             Intent localIntent = new Intent(BROADCAST_ACTION);
             localIntent.putParcelableArrayListExtra(ACTIVITY_EXTRA, detectedActivities);
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU) {
                 // For Android 13 (API level 33) and above, use explicit broadcasts
                 localIntent.setPackage(getPackageName());
                 sendBroadcast(localIntent);
