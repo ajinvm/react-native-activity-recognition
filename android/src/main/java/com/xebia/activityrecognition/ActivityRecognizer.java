@@ -44,14 +44,7 @@ public class ActivityRecognizer {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(DetectionService.BROADCAST_ACTION);
         intentFilter.addAction(DetectionService.ACTIVITY_EXTRA);
-        // if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            // mContext.registerReceiver(mBroadcastReceiver, intentFilter, Context.RECEIVER_EXPORTED);
-        // } else {
-        // LocalBroadcastManager.getInstance(mContext).registerReceiver(mBroadcastReceiver, intentFilter);
-        // Log.d("AJIN", "Registered broadcast receiver");
         
-        // }
-
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             // For Android 14 (API 34) and above (corrected)
             mContext.registerReceiver(mBroadcastReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED);
@@ -125,6 +118,8 @@ public class ActivityRecognizer {
     // Create a PendingIntent to be sent for each activity detection
     private PendingIntent getActivityDetectionPendingIntent() {
         Intent intent = new Intent(mReactContext, DetectionService.class);
+        intent.setPackage(mContext.getPackageName());
+
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
             flags |= PendingIntent.FLAG_MUTABLE;
